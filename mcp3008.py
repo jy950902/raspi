@@ -1,6 +1,7 @@
 from spidev import SpiDev
 import RPi.GPIO as GPIO
 import time
+import logging
 
 #############################################################################
 # ADC 컨버터 함수 설정
@@ -22,10 +23,24 @@ class MCP3008:
         self.spi.close()
 
 #############################################################################
+# log
+logger = logging.getLogger('myApp')
+hand = logging.FileHandler('myapp_.log')
+
+#                              생성시간,   로그레벨 ,       프로세스ID,   메시지
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(process)d %(message)s')
+
+# 파일핸들러에 문자열 포메터를 등록
+hand.setFormatter(formatter)
+
+logger.addHandler(hand)
+
+logger.setLevel(logging.INFO)
+#############################################################################
 
 LED=16   
 pir_s=25
-GPIO_TRIGGER = 21
+GPIO_TRIGGER = 18
 GPIO_ECHO = 25
 
 GPIO.setmode(GPIO.BCM)
@@ -50,7 +65,7 @@ try:
         # 파이썬에서 이 펄스는 실제 100us 근처가 될 것이다.
         # 하지만 HC-SR04 센서는 이 오차를 받아준다.
         GPIO.output(GPIO_TRIGGER, True)
-        time.sleep(1)
+        time.sleep(0.1)
         GPIO.output(GPIO_TRIGGER, False)
  
         # 에코 핀이 ON되는 시점을 시작 시간으로 잡는다.
@@ -69,17 +84,21 @@ try:
         if (stop and start):
             distance = (elapsed * 34000.0) / 2
             print("Distance : %.1f cm" % distance)
-            if distance <= 50:
+            if distance <= 150:
+                logger.warning('사람 있음')
                 if (adc_value == 0): # 조도센서 값이 0이면 (=>어두우면)
                     print("LED ON : PIR %d"%adc_value)
                     GPIO.output(LED, True) # 불이 켜짐
+                    logger.info('불켜짐')
                     time.sleep(2)
                 else:
                     print("LED OFF : PIR %d"%adc_value) # 조도센서 값이 0이 아니면 (=>빛이 조금이라도 있으면)
                     GPIO.output(LED, False) # 불이 꺼짐
+                    logger.debug('틀렸음~!!')
                     time.sleep(2)
             else:
                 GPIO.output(LED, False)
+                logger.error('사람 없음!')
                 
 
 except KeyboardInterrupt:
