@@ -23,7 +23,7 @@ ONETIME_L_RES_MODE  = 0x23
 ##########################################################
 # LED, HC-SR04 기본 설정
 LED=16
-GPIO_TRIGGER = 18
+GPIO_TRIGGER = 21
 GPIO_ECHO = 25
 
 GPIO.setmode(GPIO.BCM)
@@ -35,11 +35,13 @@ GPIO.setup(GPIO_ECHO,GPIO.IN)
 # 사용할 I2C 채널 라이브러리 생성
 i2c = smbus.SMBus(I2C_CH)
 
+
 # 측정모드 CONT_H_RES_MODE 로 측정하여 2 바이트 읽어오기 
 luxBytes = i2c.read_i2c_block_data(BH1750_DEV_ADDR, CONT_H_RES_MODE, 2)
-
+    
 # 바이트 배열을 int로 변환
 lux = int.from_bytes(luxBytes, byteorder='big')
+
 
 # 출력
 # print('{0} lux'.format(lux))
@@ -75,7 +77,12 @@ try:
         if (stop and start):
             distance = (elapsed * 34000.0) / 2
             print("Distance : %.1f cm" % distance)
-            if distance <= 150:
+            if distance <= 200:
+                # 측정모드 CONT_H_RES_MODE 로 측정하여 2 바이트 읽어오기 
+                luxBytes = i2c.read_i2c_block_data(BH1750_DEV_ADDR, CONT_H_RES_MODE, 2)
+                # 바이트 배열을 int로 변환
+                lux = int.from_bytes(luxBytes, byteorder='big')
+                
                 if (lux <= 100): # 조도센서 lux 값이 100 이하면 (=>어두우면)
                     print("LED ON : %d lux"%lux)
                     GPIO.output(LED, True) # 불이 켜짐
@@ -89,4 +96,3 @@ try:
 
 except KeyboardInterrupt:
     GPIO.cleanup()
-    
